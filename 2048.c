@@ -11,7 +11,7 @@ int map_height = 0;
 int extra_row = 3;
 
 
-int draw_title(void) {
+int draw_ui(void) {
     char *title0  = {" ▄▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄   ▄         ▄  ▄▄▄▄▄▄▄▄▄▄▄ \n"};
     char *title1  = {"▐░░░░░░░░░░░▌ ▐░░░░░░░░░▌ ▐░▌       ▐░▌▐░░░░░░░░░░░▌\n"};
     char *title2  = {" ▀▀▀▀▀▀▀▀▀█░▌▐░█░█▀▀▀▀▀█░▌▐░▌       ▐░▌▐░█▀▀▀▀▀▀▀█░▌\n"};
@@ -28,6 +28,27 @@ int draw_title(void) {
         /*  mvprintw(int y, int x, const *char)  */
         mvprintw(starty - 11 - extra_row + i, startx + map_width / 2 - (53 / 2), title[i]);
     }
+
+    char vertical[5] = "│";
+    char horizontal[5] = "─";
+    char left_down_cornor[5] = "└";
+    char left_up_cornor[5] = "┌";
+    char right_down_cornor[5] = "└";
+    char right_up_cornor[5] = "┘";
+    for ( int i = 0; i < map_width; ++i )
+    {
+        mvprintw(starty-1, startx + i, horizontal);
+        mvprintw(starty + map_height, startx + i, horizontal);
+    }
+    for ( int j = 0; j < map_height; ++j )
+    {
+        mvprintw(starty + j, startx - 1, vertical);
+        mvprintw(starty + j, startx + map_width, vertical);
+    }
+    mvprintw(starty - 1, startx - 1, left_up_cornor);
+    mvprintw(starty - 1, startx + map_width, right_up_cornor);
+    mvprintw(starty + map_height, startx - 1, left_down_cornor);
+    mvprintw(starty + map_height, startx + map_width, right_down_cornor);
 
     refresh();
     return 0;
@@ -149,7 +170,7 @@ void init(int **pgame_map, char *file_name, int *prow, int *pcol) {
     getmaxyx(stdscr, max_row, max_col);
     adjust_window(*prow, *pcol);
     read_backup(pgame_map, file_name, prow, pcol);
-    draw_title();
+    draw_ui();
 }
 
 int quit_without_prompt(void) {
@@ -258,7 +279,7 @@ void update(int *game_map, int *prow, int *pcol) {
         if ( DEBUG ) system("echo $(date) updating >> ~/test");
         clear();
         adjust_window(*prow, *pcol);
-        draw_title();
+        draw_ui();
         draw(game_map, *prow, *pcol, true);
         last_max_row = max_row;
         last_max_col = max_col;
