@@ -1,9 +1,3 @@
-# include <time.h>
-# include <math.h>
-# include <string.h>
-# include <signal.h>
-# include <ncurses.h>
-# include <json-c/json.h>
 # include "config.h"
 
 int move_down(int *map, int start, int row, int col) {
@@ -128,10 +122,14 @@ int move_right(int *map, int start, int row, int col) {
 
 int random_new(int *map, int row, int col) {
     /*  create new units after a move or at just begin  */
-    int i = 0, j = 0, times = ((int)pow(sqrt(row * col), 2/3)), load = 0, flag = 0;
+    long long i = 0, j = 0, times = (row < col)? (int)exp(row/15.0):(int)exp(col/15.0), load = 0, flag = 0;
 
-//     times = rand() % (row * 3);
-    times = (rand() % row) | 1;
+    times = (row * col > 2000)? ((long)log(sqrt(row * col)) + ((row < col)? row / 2: col / 2)):(long)exp(sqrt(row * col) / 10.0);
+    if ( DEBUG ){
+        char cmd[50];
+        sprintf(cmd, "echo %lld ' ' >> /home/rongzi/test", times);
+        system(cmd);
+    }
     while ( times != 0 && load != row * col )
     {
         i = rand() % row;
@@ -141,41 +139,57 @@ int random_new(int *map, int row, int col) {
             times -= 1;
             flag = 1;
             load = 0;
-            map[(i)*col+(j)] = 2;
+            map[(i)*col+(j)] = ((i & 1) == 1)?2:4;
         }
         load += 1;
     }
     return flag;
 }
 
-void draw(int *map, int row, int col) {
+void draw(int *map, int row, int col, bool force) {
+    /*  claim the array that store data from last game  */
+    static int map_backup[MAPSIZE] = {}, at_first = 1;
+
+
+    if ( at_first ){
+        at_first = 0;
+        draw(map, row, col, true);
+        return;
+    }
     /* fulfill the screen according to map */
     for ( int i = 0; i < row; ++i )
     {
         for ( int j = 0; j < col; ++j )
         {
-            attron(corr_color(map[i*col+j]));  // 启用颜色对
-            for ( int k = i * 3; k < i * 3 + 3; ++k )
-            {
-                for ( int l = j * 7; l < j * 7 + 7; ++l )
-                {
-                    mvprintw(startx + k, starty + l, " ");  // 在指定位置打印字符串
+            /*  test if has drew once  */
+            if ( map_backup[i * col + j] == map[i * col + j] && force != true ) continue;
+
+            /* 启用颜色对 */
+            attron(corr_color(map[i*col+j]));
+            /*  draw the background  */
+            for ( int k = i * 3; k < i * 3 + 3; ++k ) {
+                for ( int l = j * 7; l < j * 7 + 7; ++l ) {
+                    mvprintw(starty + k, startx + l, " ");
                 }
             }
-            int posx = startx + i * height + height * 1/2;
-            int posy = starty + j * width + width * 1/2;
+
+            int posy = starty + i * unit_height + unit_height * 1/2;
+            int posx = startx + j * unit_width + unit_width * 1/2;
+
+            map_backup[i * col + j] = map[i * col + j];
+            /*  draw the digits  */
             if ( map[i*col+j] == 0 )
-                mvprintw(posx, posy, "+");     // 在指定位置打印字符串
+                mvprintw(posy, posx, "+");     // 在指定位置打印字符串
             else
             {
                 char number[10] = {0};
                 sprintf(number, "%d", map[i*col+j]);
                 if ( map[i*col+j] > 1000 )
-                    mvprintw(posx, posy - 2, number);     // 在指定位置打印字符串
+                    mvprintw(posy, posx - 2, number);     // 在指定位置打印字符串
                 else if ( map[i*col+j] > 10 )
-                    mvprintw(posx, posy - 1, number);     // 在指定位置打印字符串
+                    mvprintw(posy, posx - 1, number);     // 在指定位置打印字符串
                 else
-                    mvprintw(posx, posy, number);     // 在指定位置打印字符串
+                    mvprintw(posy, posx, number);     // 在指定位置打印字符串
             }
             attroff(corr_color(map[i*col+j]));          // 关闭颜色对
         }
@@ -187,12 +201,12 @@ int* json_to_map(char *filename, int *row, int *col) {
     char file_name[100];
     sprintf(file_name, "%s", filename);
     FILE *fp = fopen(file_name, "r");
-    char buffer[20480] = {};
+    char buffer[FILESIZE] = {};
     if ( fp == NULL ){
         perror("Error! Fail to open data.json");
         return 0;
     }
-    fread(buffer, 10240, 1, fp);
+    fread(buffer, sizeof(buffer), 1, fp);
     fclose(fp);
 
     struct json_object *parsed_json = json_tokener_parse(buffer);
@@ -202,6 +216,7 @@ int* json_to_map(char *filename, int *row, int *col) {
     /* parse json and save to array */
     int rows = json_object_array_length(outter_array);
     int *array = (int *) calloc(rows * rows, sizeof(int));
+
     *row = rows;
     for ( int r = 0; r < rows; ++r )
     {
@@ -210,7 +225,7 @@ int* json_to_map(char *filename, int *row, int *col) {
         *col = columns;
         for ( int c = 0; c < columns; ++c ) {
             struct json_object *element = json_object_array_get_idx(inner_array, c);
-            array[r * rows + c] = atoi(json_object_to_json_string(element));
+            array[r * *col + c] = atoi(json_object_to_json_string(element));
         }
     }
     return array;
@@ -231,21 +246,48 @@ int map_to_json(int *array, int row, int col) {
     }
 
     FILE *fp = fopen("/home/rongzi/.Lectures/hw/2048/data.json", "w");
-    if ( fp != NULL ){
+    if ( fp == NULL ){
+        fprintf(stderr, "Error! Can't write to data.json");
+    }
+    else{
         size_t lenth = strlen(json_object_to_json_string(outter_json_array));
         char buffer[lenth + 10] = {};
         sprintf(buffer, "{\n    \"array\":%s\n}", json_object_to_json_string(outter_json_array));
         fprintf(fp, "%s", buffer);
     }
-    else{
-        fprintf(stderr, "Error! Can't write to data.json");
-    }
     fclose(fp);
     return 0;
 }
 
+bool is_json(char *file_name) {
+    FILE *fp = fopen(file_name, "r");
+    char buffer[FILESIZE] = {};
+
+    if ( fp == NULL )
+        return false;
+
+    fread(buffer, sizeof(buffer), 1, fp);
+    fclose(fp);
+
+    char pattern[] = ".*json";
+    regex_t regex;
+    regcomp(&regex, pattern, REG_EXTENDED);
+    if ( regexec(&regex, file_name, 0, NULL, 0) != 0 )
+        return false;
+
+    struct json_object *outter_array;
+    struct json_object *parsed_json = json_tokener_parse(buffer);
+    json_object_object_get_ex(parsed_json, "array", &outter_array);
+    if (json_object_object_get_ex(parsed_json, "array", &outter_array))
+        return true;        /*  "array" exists  */
+    else
+        return false;       /*  no key "array"  */
+    return false;
+}
+
 void color_init() {
-    start_color();          // 启用颜色
+    /*  enable color  */
+    start_color();
     init_pair(1, COLOR_BLACK, COLOR_GREEN);
     init_pair(2, COLOR_BLACK, COLOR_YELLOW);
     init_pair(3, COLOR_BLACK, COLOR_BLUE);
@@ -257,6 +299,7 @@ void color_init() {
     init_pair(9, COLOR_BLACK, COLOR_RED);
     init_pair(10, COLOR_BLACK, COLOR_WHITE);
     init_pair(11, COLOR_WHITE, COLOR_BLACK);
+    init_pair(12, COLOR_RED, COLOR_WHITE);
 }
 
 int corr_color(int n) {
