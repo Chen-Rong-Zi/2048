@@ -117,7 +117,7 @@ int read_backup(int **pmap, char *file_name, int *prow, int *pcol) {
     FILE *fp = fopen(file_name, "r");
     char buffer[FILESIZE] = {};
 
-    /*  case0 there is no such file  */
+    /*  case0 can not open file  */
     if ( fp == NULL ){
         random_new(*pmap, *prow, *pcol);
         return 0;
@@ -126,7 +126,7 @@ int read_backup(int **pmap, char *file_name, int *prow, int *pcol) {
     fread(buffer, FILESIZE, 1, fp);
     fclose(fp);
 
-    /*  case1 the file is not empty and we read it!  */
+    /*  case1 the file is there and we read it!  */
     free(*pmap);
     *pmap = json_to_map(file_name, prow, pcol);
     adjust_window(*prow, *pcol);
@@ -163,8 +163,8 @@ void init(int **pgame_map, char *file_name, int *prow, int *pcol) {
     /*  init  */
     init_ncurses();
     getmaxyx(stdscr, max_row, max_col);
-    adjust_window(*prow, *pcol);
     read_backup(pgame_map, file_name, prow, pcol);
+    adjust_window(*prow, *pcol);
     draw_ui(*prow, *pcol);
 }
 
@@ -232,10 +232,10 @@ int arg_parse(char **arg_list, int arg_number, char (*pfile_name)[100], int *pro
             *pcol = (*pcol == 0)? *prow:*pcol;
 
             if ( *prow * *pcol >= 10000 ){
-                fprintf(stderr, "size too bjg!\n");
+                fprintf(stderr, "size too big!\n");
                 exit(1);
             }
-            else if ( *prow * *pcol <= 0 ){
+            else if ( *prow * *pcol <= 0 || *prow <= 0 || *pcol <= 0 ){
                 fprintf(stderr, "size too small!\n");
                 exit(1);
             }
@@ -268,17 +268,25 @@ int arg_parse(char **arg_list, int arg_number, char (*pfile_name)[100], int *pro
 }
 
 void update(int *game_map, int *prow, int *pcol) {
-    static int last_max_row = 0, last_max_col = 0;
+    /*  detect whether the window size has changed  */
+    static int last_max_row = 0, last_max_col = 0, is_first = 1;
     getmaxyx(stdscr, max_row, max_col);
-    if ( max_row != last_max_row || max_col != last_max_col ){
+
+    if ( is_first ){
+        last_max_row = max_row;
+        last_max_col = max_col;
+        is_first = 0;
+        return;
+    }
+
+    if ( (max_row != last_max_row || max_col != last_max_col) && is_first == 0 ){
         if ( DEBUG ) system("echo $(date) updating >> ~/test");
         clear();
         adjust_window(*prow, *pcol);
         draw_ui(*prow, *pcol);
         draw(game_map, *prow, *pcol, true);
-        last_max_row = max_row;
-        last_max_col = max_col;
     }
+    return;
 }
 
 void play(int *game_map, int row, int col) {
@@ -286,6 +294,7 @@ void play(int *game_map, int row, int col) {
     int flag = 1;
     char ch = 0;
 
+    draw(game_map, row, col, true);
     while ( true )
     {
         if ( ch == 'q' ){

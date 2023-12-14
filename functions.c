@@ -6,23 +6,27 @@ int move_down(int *map, int start, int row, int col) {
         return 0;
 
     int flag = move_down(map, start + 1, row, col);
+
+    /*  for every element in a row  */
     for ( int i = 0; i < col; ++i )
     {
+        /*  for every element in a column  */
         for ( int j = start; j < row - 1; ++j)
         {
-            if ( map[(j)*col+(i)] == 0 )
-                break;
-            if ( map[(j)*col+(i)] == map[(j+1)*col+(i)] )
+            if ( map[j * col + i] == 0 ) break;
+
+            int curr_index = j * col + i, next_row_index = (j + 1) * col + i;
+            if ( map[curr_index] == map[next_row_index] )
             {
-                map[(j+1)*col+(i)] *= 2;
-                map[(j)*col+(i)] = 0;
+                map[next_row_index] *= 2;
+                map[curr_index] = 0;
                 flag = 1;
                 break;
             }
-            else if ( map[(j+1)*col+(i)] == 0 )
+            else if ( map[next_row_index] == 0 )
             {
-                map[(j+1)*col+(i)] = map[(j)*col+(i)];
-                map[(j)*col+(i)] = 0;
+                map[next_row_index] = map[curr_index];
+                map[curr_index] = 0;
                 flag = 1;
             }
         }
@@ -40,19 +44,20 @@ int move_up(int *map, int start, int row, int col) {
     {
         for ( int j = start; j > 0; --j)
         {
-            if ( map[(j)*col+(i)] == 0 )
-                break;
-            if ( map[(j)*col+(i)] == map[(j-1)*col+(i)] )
+            if ( map[j * col + i] == 0 ) break;
+
+            int curr_index = j * col + i, prev_row_index = (j - 1) * col + i;
+            if ( map[curr_index] == map[prev_row_index] )
             {
-                map[(j-1)*col+(i)] *= 2;
-                map[(j)*col+(i)] = 0;
+                map[prev_row_index] *= 2;
+                map[curr_index] = 0;
                 flag = 1;
                 break;
             }
-            else if ( map[(j-1)*col+(i)] == 0 )
+            else if ( map[prev_row_index] == 0 )
             {
-                map[(j-1)*col+(i)] = map[(j)*col+(i)];
-                map[(j)*col+(i)] = 0;
+                map[prev_row_index] = map[curr_index];
+                map[curr_index] = 0;
                 flag = 1;
             }
         }
@@ -70,19 +75,20 @@ int move_left(int *map, int start, int row, int col) {
     {
         for ( int j = start; j > 0; --j)
         {
-            if ( map[(i)*col+(j)] == 0 )
-                break;
-            if ( map[(i)*col+(j)] == map[(i)*col+(j-1)] )
+            if ( map[i * col + j] == 0 ) break;
+
+            int curr_index = i * col + j, prev_col_index = i * col + j - 1;
+            if ( map[curr_index] == map[prev_col_index] )
             {
-                map[(i)*col+(j-1)] *= 2;
-                map[(i)*col+(j)] = 0;
+                map[prev_col_index] *= 2;
+                map[curr_index] = 0;
                 flag = 1;
                 break;
             }
-            else if ( map[(i)*col+(j-1)] == 0 )
+            else if ( map[prev_col_index] == 0 )
             {
-                map[(i)*col+(j-1)] = map[(i)*col+(j)];
-                map[(i)*col+(j)] = 0;
+                map[prev_col_index] = map[curr_index];
+                map[curr_index] = 0;
                 flag = 1;
             }
         }
@@ -100,19 +106,20 @@ int move_right(int *map, int start, int row, int col) {
     {
         for ( int j = start; j < col - 1; ++j)
         {
-            if ( map[i*col+j] == 0 )
-                break;
-            if ( map[i*col+j] == map[i*col+j+1] )
+            if ( map[i * col + j] == 0 ) break;
+
+            int curr_index = i * col + j, next_col_index = i * col + j + 1;
+            if ( map[curr_index] == map[next_col_index] )
             {
-                map[i*col+j+1] *= 2;
-                map[i*col+j] = 0;
+                map[next_col_index] *= 2;
+                map[curr_index] = 0;
                 flag = 1;
                 break;
             }
-            else if ( map[i*col+j+1] == 0 )
+            else if ( map[next_col_index] == 0 )
             {
-                map[i*col+j+1] = map[i*col+j];
-                map[i*col+j] = 0;
+                map[next_col_index] = map[curr_index];
+                map[curr_index] = 0;
                 flag = 1;
             }
         }
@@ -148,21 +155,16 @@ int random_new(int *map, int row, int col) {
 
 void draw(int *map, int row, int col, bool force) {
     /*  claim the array that store data from last game  */
-    static int map_backup[MAPSIZE] = {}, at_first = 1;
+    static int map_backup[MAPSIZE] = {};
 
-
-    if ( at_first ){
-        at_first = 0;
-        draw(map, row, col, true);
-        return;
-    }
     /* fulfill the screen according to map */
     for ( int i = 0; i < row; ++i )
     {
         for ( int j = 0; j < col; ++j )
         {
+            int curr_index = i * col + j;
             /*  test if has drew once  */
-            if ( map_backup[i * col + j] == map[i * col + j] && force != true ) continue;
+            if ( map_backup[curr_index] == map[curr_index] && !force) continue;
 
             /* 启用颜色对 */
             attron(corr_color(map[i*col+j]));
@@ -176,27 +178,27 @@ void draw(int *map, int row, int col, bool force) {
             int posy = starty + i * unit_height + unit_height * 1/2;
             int posx = startx + j * unit_width + unit_width * 1/2;
 
-            map_backup[i * col + j] = map[i * col + j];
+            map_backup[curr_index] = map[curr_index];
             /*  draw the digits  */
-            if ( map[i*col+j] == 0 )
+            if ( map[curr_index] == 0 )
                 mvprintw(posy, posx, "+");     // 在指定位置打印字符串
             else
             {
                 char number[10] = {0};
-                sprintf(number, "%d", map[i*col+j]);
-                if ( map[i*col+j] > 1000 )
-                    mvprintw(posy, posx - 2, number);     // 在指定位置打印字符串
-                else if ( map[i*col+j] > 10 )
-                    mvprintw(posy, posx - 1, number);     // 在指定位置打印字符串
-                else
+                sprintf(number, "%d", map[curr_index]);
+                if ( map[curr_index] < 10 )
                     mvprintw(posy, posx, number);     // 在指定位置打印字符串
+                else if ( map[curr_index] > 10 && map[curr_index] < 1000 )
+                    mvprintw(posy, posx - 1, number);     // 在指定位置打印字符串
+                else if ( map[curr_index] > 1000 )
+                    mvprintw(posy, posx - 2, number);     // 在指定位置打印字符串
             }
-            attroff(corr_color(map[i*col+j]));          // 关闭颜色对
+            attroff(corr_color(map[curr_index]));          // 关闭颜色对
         }
     }
 }
 
-int* json_to_map(char *filename, int *row, int *col) {
+int *json_to_map(char *filename, int *row, int *col) {
     /* read json file */
     char file_name[100];
     sprintf(file_name, "%s", filename);

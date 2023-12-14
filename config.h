@@ -11,7 +11,7 @@
 # include <json-c/json.h>
 # include <locale.h>
 
-# define DEBUG 1
+# define DEBUG 0
 # define MAX_ROW 100
 # define MAX_COL 100
 # define FILESIZE 50000
@@ -51,7 +51,7 @@ int move_left(int *map, int start, int row, int col);
 int move_right(int *map, int start, int row, int col);
 int *json_to_map(char *file_name, int *row, int *col);
 int map_to_json(int *array, int row, int col);
-void draw(int *map, int row, int col, bool);
+void draw(int *map, int row, int col, bool force);
 bool is_json(char *);
 
 /*  2048.c  */
