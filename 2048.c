@@ -4,14 +4,14 @@ int max_row = MAX_ROW;
 int max_col = MAX_COL;
 int startx = 0;
 int starty = 0;
-int unit_height = 3;
-int unit_width = 7;
-int map_width = 0;
-int map_height = 0;
 int extra_row = 3;
 
+/*  for singal unit  */
+int unit_height = 3;
+int unit_width = 7;
 
-int draw_ui(void) {
+
+int draw_ui(int row, int col) {
     char *title0  = {" ▄▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄   ▄         ▄  ▄▄▄▄▄▄▄▄▄▄▄ \n"};
     char *title1  = {"▐░░░░░░░░░░░▌ ▐░░░░░░░░░▌ ▐░▌       ▐░▌▐░░░░░░░░░░░▌\n"};
     char *title2  = {" ▀▀▀▀▀▀▀▀▀█░▌▐░█░█▀▀▀▀▀█░▌▐░▌       ▐░▌▐░█▀▀▀▀▀▀▀█░▌\n"};
@@ -24,6 +24,9 @@ int draw_ui(void) {
     char *title9  = {"▐░░░░░░░░░░░▌ ▐░░░░░░░░░▌           ▐░▌▐░░░░░░░░░░░▌\n"};
     char *title10 = {" ▀▀▀▀▀▀▀▀▀▀▀   ▀▀▀▀▀▀▀▀▀             ▀  ▀▀▀▀▀▀▀▀▀▀▀ \n"};
     char *title[] = {title0, title1, title2, title3, title4, title5, title6, title7, title8, title9, title10};
+
+    int map_width = col * unit_width;
+    int map_height = row * unit_height;
     for ( int i = 0; i < 11; ++i ) {
         /*  mvprintw(int y, int x, const *char)  */
         mvprintw(starty - 11 - extra_row + i, startx + map_width / 2 - (53 / 2), title[i]);
@@ -33,8 +36,8 @@ int draw_ui(void) {
     char horizontal[5] = "─";
     char left_down_cornor[5] = "└";
     char left_up_cornor[5] = "┌";
-    char right_down_cornor[5] = "└";
-    char right_up_cornor[5] = "┘";
+    char right_down_cornor[5] = "┘";
+    char right_up_cornor[5] = "┐";
     for ( int i = 0; i < map_width; ++i )
     {
         mvprintw(starty-1, startx + i, horizontal);
@@ -145,14 +148,6 @@ void init_ncurses(void) {
 }
 
 void adjust_window(int row, int col) {
-    /*  for singal unit  */
-//     unit_height = 3;
-//     unit_width = 7;
-// 
-    map_width = 7 * col;
-    map_height = 3 * row;
-//     extra_row = 3;
-
     /*  for all map  */
     int idealy = max_row / 2 - row / 2 * unit_height, idealx = max_col / 2 - col / 2 * unit_width;
     startx = (idealx > 4)? idealx:4;
@@ -170,7 +165,7 @@ void init(int **pgame_map, char *file_name, int *prow, int *pcol) {
     getmaxyx(stdscr, max_row, max_col);
     adjust_window(*prow, *pcol);
     read_backup(pgame_map, file_name, prow, pcol);
-    draw_ui();
+    draw_ui(*prow, *pcol);
 }
 
 int quit_without_prompt(void) {
@@ -279,7 +274,7 @@ void update(int *game_map, int *prow, int *pcol) {
         if ( DEBUG ) system("echo $(date) updating >> ~/test");
         clear();
         adjust_window(*prow, *pcol);
-        draw_ui();
+        draw_ui(*prow, *pcol);
         draw(game_map, *prow, *pcol, true);
         last_max_row = max_row;
         last_max_col = max_col;
