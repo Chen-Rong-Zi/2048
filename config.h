@@ -14,11 +14,14 @@
 # define DEBUG 0
 # define MAX_ROW 100
 # define MAX_COL 100
+/*  for singal unit  */
+# define UNIT_HEIGHT 3
+# define UNIT_WIDTH 7
+# define STARTX 0       /*  x where title draw  */
+# define STARTY 0       /*  x where title start  */
+# define EXTRA_ROW 3    /*  where prompt start  */
 # define FILESIZE 50000
 # define MAPSIZE 10000
-
-# define max(a, b) ((a > b)? (a):(b))
-# define min(a, b) ((a < b)? (a):(b))
 
 # define COLOR_0    COLOR_PAIR(11)
 # define COLOR_2    COLOR_PAIR(1)
@@ -42,6 +45,7 @@ extern int unit_width;
 extern int map_width;
 extern int map_height;
 extern int extra_row;
+extern long times;
 
 /*  functions.c  */
 int random_new(int *, int, int);

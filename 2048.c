@@ -1,14 +1,14 @@
 # include "config.h"
 
+int unit_height = UNIT_HEIGHT;
+int unit_width = UNIT_WIDTH;
 int max_row = MAX_ROW;
 int max_col = MAX_COL;
-int startx = 0;
-int starty = 0;
-int extra_row = 3;
+int startx = STARTX;
+int starty = STARTY;
+int extra_row = EXTRA_ROW;
+long times;
 
-/*  for singal unit  */
-int unit_height = 3;
-int unit_width = 7;
 
 
 int draw_ui(int row, int col) {
@@ -118,10 +118,7 @@ int read_backup(int **pmap, char *file_name, int *prow, int *pcol) {
     char buffer[FILESIZE] = {};
 
     /*  case0 can not open file  */
-    if ( fp == NULL ){
-        random_new(*pmap, *prow, *pcol);
-        return 0;
-    }
+    if ( fp == NULL ) return 0;
 
     fread(buffer, FILESIZE, 1, fp);
     fclose(fp);
@@ -131,7 +128,7 @@ int read_backup(int **pmap, char *file_name, int *prow, int *pcol) {
     *pmap = json_to_map(file_name, prow, pcol);
     adjust_window(*prow, *pcol);
 
-    return (*pmap != NULL)? 0:-1;
+    return 1;
 }
 
 void init_ncurses(void) {
@@ -154,7 +151,7 @@ void adjust_window(int row, int col) {
     starty = (idealy > 11 + extra_row)? idealy:11 + extra_row;
     if ( DEBUG ){
         char cmd[100] = {};
-        sprintf(cmd, "echo $(date) : startx = %d, starty = %d  >> /home/rongzi/test", startx, starty);
+        sprintf(cmd, "echo $(date) : startx = %d, starty = %d  >> /home/rongzi/.log/2048", startx, starty);
         system(cmd);
     }
 }
@@ -163,7 +160,12 @@ void init(int **pgame_map, char *file_name, int *prow, int *pcol) {
     /*  init  */
     init_ncurses();
     getmaxyx(stdscr, max_row, max_col);
-    read_backup(pgame_map, file_name, prow, pcol);
+    int has_backup = read_backup(pgame_map, file_name, prow, pcol);
+    times = (*prow * *pcol > 2000)? ((long)log(sqrt(*prow * *pcol)) + ((*prow < *pcol)? *prow / 2: *pcol / 2)):(long)exp(sqrt(*prow * *pcol) / 10.0);
+    if ( !has_backup ) {
+        /*  create new game  */
+        random_new(*pgame_map, *prow, *pcol);
+    }
     adjust_window(*prow, *pcol);
     draw_ui(*prow, *pcol);
 }
@@ -245,7 +247,7 @@ int arg_parse(char **arg_list, int arg_number, char (*pfile_name)[100], int *pro
         else if ( fflag == 0 && strcmp(arg_list[i], "-f") == 0 ){
             /*  case0 not a json and we quit!  */
             if ( !is_json(arg_list[i + 1]) ){
-                fprintf(stderr, "there is no such file!\n");
+                fprintf(stderr, "it is not standard data file\n");
                 exit(1);
             }
 
@@ -272,7 +274,7 @@ void update(int *game_map, int *prow, int *pcol) {
     static int last_max_row = 0, last_max_col = 0, is_first = 1;
     getmaxyx(stdscr, max_row, max_col);
 
-    if ( is_first ){
+    if ( is_first == 1 ){
         last_max_row = max_row;
         last_max_col = max_col;
         is_first = 0;
@@ -285,6 +287,8 @@ void update(int *game_map, int *prow, int *pcol) {
         adjust_window(*prow, *pcol);
         draw_ui(*prow, *pcol);
         draw(game_map, *prow, *pcol, true);
+        last_max_row = max_row;
+        last_max_col = max_col;
     }
     return;
 }
@@ -346,4 +350,3 @@ int main(int arg_number, char **arg_value) {
     endwin();
     return 0;
 }
-

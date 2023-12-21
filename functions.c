@@ -129,24 +129,24 @@ int move_right(int *map, int start, int row, int col) {
 
 int random_new(int *map, int row, int col) {
     /*  create new units after a move or at just begin  */
-    long long i = 0, j = 0, times = (row < col)? (int)exp(row/15.0):(int)exp(col/15.0), load = 0, flag = 0;
+    long long i = 0, j = 0, load = 0, flag = 0;
 
-    times = (row * col > 2000)? ((long)log(sqrt(row * col)) + ((row < col)? row / 2: col / 2)):(long)exp(sqrt(row * col) / 10.0);
+    long long temp_times = times;
     if ( DEBUG ){
         char cmd[50];
-        sprintf(cmd, "echo %lld ' ' >> /home/rongzi/test", times);
+        sprintf(cmd, "echo %lld ' ' >> /home/rongzi/test", temp_times);
         system(cmd);
     }
-    while ( times != 0 && load != row * col )
+    while ( temp_times != 0 && load != row * col )
     {
         i = rand() % row;
         j = rand() % col;
-        if ( map[(i)*col+(j)] == 0 )
+        if ( map[i * col + j] == 0 )
         {
-            times -= 1;
+            temp_times -= 1;
             flag = 1;
             load = 0;
-            map[(i)*col+(j)] = ((i & 1) == 1)?2:4;
+            map[i * col + j] = ((i & 1) == 1)?2:4;
         }
         load += 1;
     }
@@ -154,7 +154,7 @@ int random_new(int *map, int row, int col) {
 }
 
 void draw(int *map, int row, int col, bool force) {
-    /*  claim the array that store data from last game  */
+    /*   the array that store data from last game  */
     static int map_backup[MAPSIZE] = {};
 
     /* fulfill the screen according to map */
@@ -167,7 +167,7 @@ void draw(int *map, int row, int col, bool force) {
             if ( map_backup[curr_index] == map[curr_index] && !force) continue;
 
             /* 启用颜色对 */
-            attron(corr_color(map[i*col+j]));
+            attron(corr_color(map[curr_index]));
             /*  draw the background  */
             for ( int k = i * 3; k < i * 3 + 3; ++k ) {
                 for ( int l = j * 7; l < j * 7 + 7; ++l ) {
